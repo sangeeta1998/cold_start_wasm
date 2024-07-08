@@ -27,16 +27,11 @@ measure_rust() {
 measure_wasm() {
     trials=5
     total_wasm_time=0
-    wasm_file="serverless_wasm/target/wasm32-wasi/release/serverless_wasm.wasm"
 
     for i in $(seq 1 $trials); do
+        sudo ctr image pull github.io/sangeetakakati/serwasm:latest > /dev/null 2>&1
         start_time=$(date +%s%3N)
-        if [ -f "$wasm_file" ]; then
-            /home/kakati/.wasmtime/bin/wasmtime "$wasm_file" > /dev/null 2>&1
-        else
-            echo "Error: Wasm module not found at $wasm_file"
-            return 1
-        fi
+        sudo docker run --runtime=io.containerd.wasmtime.v1 --platform=wasi/wasm sangeetakakati/serwasm:latest > /dev/null 2>&1
         end_time=$(date +%s%3N)
         total_wasm_time=$((total_wasm_time + end_time - start_time))
     done
@@ -47,4 +42,5 @@ measure_wasm() {
 # Measure time
 measure_rust
 measure_wasm
+
 
