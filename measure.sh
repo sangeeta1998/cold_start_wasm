@@ -6,18 +6,23 @@ measure_rust() {
     total_cache_time=0
 
     for i in $(seq 1 $trials); do
-        # Measure cold start time from pull
-        docker rmi sangeetakakati/rust-serverless:latest > /dev/null 2>&1
+        docker rmi sangeetakakati/rust-serverless:latest > /dev/null 2>&1  #cold start time from pull
         start_time=$(date +%s%3N)
         docker run --rm sangeetakakati/rust-serverless > /dev/null 2>&1
         end_time=$(date +%s%3N)
-        total_pull_time=$((total_pull_time + end_time - start_time))
+        pull_time=$((end_time - start_time))
+        total_pull_time=$((total_pull_time + pull_time))
 
-        # Measure cold start time from cache
-        start_time=$(date +%s%3N)
+        # Ensuring
+        docker pull sangeetakakati/rust-serverless:latest > /dev/null 2>&1
+
+        start_time=$(date +%s%3N)  # Measure cold start time from cache
         docker run --rm sangeetakakati/rust-serverless > /dev/null 2>&1
         end_time=$(date +%s%3N)
-        total_cache_time=$((total_cache_time + end_time - start_time))
+        cache_time=$((end_time - start_time))
+        total_cache_time=$((total_cache_time + cache_time))
+
+        echo "Rust Trial $i: Pull time = $pull_time ms, Cache time = $cache_time ms"
     done
 
     echo "Average Rust cold start time from pull: $((total_pull_time / trials)) ms"
@@ -30,26 +35,30 @@ measure_wasm() {
     total_cache_time=0
 
     for i in $(seq 1 $trials); do
-        # Measure cold start time from pull
+        #cold start time from pull
         docker rmi sangeetakakati/serwasm:latest > /dev/null 2>&1
         start_time=$(date +%s%3N)
         docker run --runtime=io.containerd.wasmtime.v1 --platform=wasi/wasm --rm sangeetakakati/serwasm:latest > /dev/null 2>&1
         end_time=$(date +%s%3N)
-        total_pull_time=$((total_pull_time + end_time - start_time))
+        pull_time=$((end_time - start_time))
+        total_pull_time=$((total_pull_time + pull_time))
 
-        # Measure cold start time from cache
+        #Ensuring
+        docker pull sangeetakakati/serwasm:latest > /dev/null 2>&1
+
+        #cold start time from cache
         start_time=$(date +%s%3N)
         docker run --runtime=io.containerd.wasmtime.v1 --platform=wasi/wasm --rm sangeetakakati/serwasm:latest > /dev/null 2>&1
         end_time=$(date +%s%3N)
-        total_cache_time=$((total_cache_time + end_time - start_time))
+        cache_time=$((end_time - start_time))
+        total_cache_time=$((total_cache_time + cache_time))
+
+        echo "Wasm Trial $i: Pull time = $pull_time ms, Cache time = $cache_time ms"
     done
 
     echo "Average Wasm cold start time from pull: $((total_pull_time / trials)) ms"
     echo "Average Wasm cold start time from cache: $((total_cache_time / trials)) ms"
 }
 
-# Measure time
 measure_rust
 measure_wasm
-
-
